@@ -275,8 +275,8 @@
       "launching payload..."
     ];
 
-    // Your deployed Vercel proxy URL here:
-    const proxyBase = "https://gogard-git-main-imqw00s-projects.vercel.app/api/proxy?url=";
+    // Updated proxyBase to dynamically use current origin:
+    const proxyBase = window.location.origin + "/api/proxy?url=";
 
     // Update progress bars as user types
     input.addEventListener("input", updateBars);
@@ -348,29 +348,23 @@
           codeFlow.textContent += hackerPhrases[phraseIndex] + "\n";
           codeFlow.scrollTop = codeFlow.scrollHeight;
           phraseIndex++;
-          setTimeout(addPhrase, 600);
+          setTimeout(addPhrase, 400);
         } else {
-          // After phrases done, animate final loading bar
+          // After phrases, animate final loading bar
           finalLoadingFill.style.width = "100%";
           setTimeout(() => {
-            // Hide overlays
-            finalLoading.style.display = "none";
+            // Open new window proxied
+            window.open(proxyBase + encodeURIComponent(url), "_blank");
+
+            // Reset UI
+            loadingBars.classList.remove("squish");
+            input.disabled = false;
             codeFlow.style.display = "none";
-            loadingBars.style.display = "none";
-
-            // Open the URL in a new tab (or iframe if you want)
-            window.open(url, "_blank");
-
-            // Re-enable input and reset bars after short delay
-            setTimeout(() => {
-              input.disabled = false;
-              input.value = "";
-              updateBars();
-              loadingBars.classList.remove("squish");
-              loadingBars.style.display = "flex";
-              status.textContent = "GoGard++";
-              status.style.color = "#f2f2f2";
-            }, 1000);
+            finalLoading.style.display = "none";
+            input.value = "";
+            updateBars();
+            status.textContent = "GoGard++";
+            status.style.color = "#f2f2f2";
           }, 1500);
         }
       }
@@ -378,58 +372,42 @@
       addPhrase();
     }
 
-    function startOpenSequence(inputUrl) {
-      if (!inputUrl) return alert("Please enter a URL.");
+    function startOpenSequence(val) {
+      if (!val) return alert("Please enter a URL.");
 
-      let url = inputUrl;
+      let url = val;
 
-      // If ends with (prox), rewrite URL to use proxy
-      if (url.endsWith("(prox)")) {
-        url = url.slice(0, -6); // remove (prox)
-        if (!url.startsWith("http://") && !url.startsWith("https://")) {
-          return alert("For proxy, enter full URL starting with http:// or https://");
-        }
-        url = proxyBase + encodeURIComponent(url);
-      } else {
-        if (!url.startsWith("http://") && !url.startsWith("https://")) {
-          return alert("Please enter a full URL starting with http:// or https://");
-        }
+      if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        url = "https://" + url;
       }
 
-      // Validate domain ends with allowed TLDs
-      const domainValid = fullDomains.some(d => inputUrl.endsWith(d) || inputUrl.endsWith(d + "(prox)"));
-      if (!domainValid) {
-        return alert("URL should end with a valid domain like .com, .net, .org, etc.");
+      // Handle (prox) suffix
+      if (url.endsWith("(prox)")) {
+        url = url.slice(0, -6);
       }
 
       openIframeWindow(url);
     }
 
+    // Preset modal code
     function openPresetModal() {
+      presetModal.style.display = "flex";
       presetList.innerHTML = "";
-      presetSites.forEach(preset => {
+      presetSites.forEach(site => {
         const btn = document.createElement("button");
-        btn.textContent = preset.name;
+        btn.textContent = site.name;
         btn.className = "presetButton";
         btn.onclick = () => {
-          startOpenSequence(preset.url);
+          startOpenSequence(site.url + "(prox)");
           closePresetModal();
         };
         presetList.appendChild(btn);
       });
-      presetModal.style.display = "flex";
-      input.disabled = true;
     }
 
     function closePresetModal() {
       presetModal.style.display = "none";
-      input.disabled = false;
-      input.focus();
     }
-
-    // Initialize bars on load
-    updateBars();
   </script>
-
 </body>
 </html>
